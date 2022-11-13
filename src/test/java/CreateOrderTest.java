@@ -13,6 +13,9 @@ import static org.hamcrest.Matchers.notNullValue;
 
 @RunWith(Parameterized.class)
 public class CreateOrderTest {
+    OrderApi orderApi = new OrderApi();
+    final static String DELETE_TRACK_URI = "/api/v1/orders/cancel?track=";
+
 
     private final Order testOrder ;
     Order order;
@@ -41,13 +44,9 @@ public class CreateOrderTest {
         }
 
     @Test
-    public void SuccessOrderTest(){
+    public void successOrderTest(){
 
-        GetTrack track = given()
-                .header("Content-type", "application/json")
-                .body(order)
-                .when()
-                .post("/api/v1/orders")
+        GetTrack track = orderApi.createOrder(order)
                 .body().as(GetTrack.class);
 
 
@@ -56,9 +55,9 @@ public class CreateOrderTest {
 
     }
 @After
-    public void DelTrack(){
+    public void delTrack(){
     given()
             .header("Content-type", "application/json")
-            .put("/api/v1/orders/cancel?track="+ trackId);
+            .put(DELETE_TRACK_URI + trackId);
 }
 }

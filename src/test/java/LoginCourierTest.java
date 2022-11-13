@@ -2,131 +2,81 @@ import io.restassured.RestAssured;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import static org.apache.http.HttpStatus.*;
+
+
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class LoginCourierTest {
-    CreateUser firstUser;
     String message = "Учетная запись не найдена";
     String message2 = "Недостаточно данных для входа";
-
+    CreateUser firstUser = new CreateUser("kull001","12345","firstUser");
+    CreateUser invalidUser1 = new CreateUser("kull0012","12345","firstUser");
+    CreateUser invalidUser2 = new CreateUser("kull001","123456","firstUser");
+    CreateUser userWithoutLogin = new CreateUser("", "12345","firstUser");
+    CreateUser userWithoutPassword = new CreateUser("kull001", "","firstUser");
+    CourierApi courierApi = new CourierApi();
     @Before
     public void setUp() {
         RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru";
-        firstUser = new CreateUser("kull001","12345","firstUser");
-        given()
-                .header("Content-type", "application/json")
-                .body(firstUser)
-                .post("/api/v1/courier");
+        courierApi.createCourier(firstUser);
+
 
     }
 
     @Test
-    public void SuccessLoginTest(){
-
-        given()
-                .header("Content-type", "application/json")
-                .body(firstUser)
-                .post("/api/v1/courier/login")
-                .then().statusCode(200);
+    public void successLoginTest(){
+        courierApi.login(firstUser)
+                .then().statusCode(SC_OK);
     }
 
     @Test
-    public void LoginUserWithoutFieldLoginImpossibleReturnError400Test(){
-        String json = "{\"login\":,\"password\":\"12345\"}";
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(json)
-                .when()
-                .post("/api/v1/courier/login")
-                .then().statusCode(400);
+    public void loginUserWithoutFieldLoginImpossibleReturnError400Test(){
+        courierApi.login(userWithoutLogin)
+                .then().statusCode(SC_BAD_REQUEST);
     }
     @Test
-    public void LoginUserWithoutFieldPasswordImpossibleReturnError400Test() {
-        String json = "{\"login\":\"kull001\",\"password\":}";
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(json)
-                .when()
-                .post("/api/v1/courier/login")
-                .then().statusCode(400);
+    public void loginUserWithoutFieldPasswordImpossibleReturnError400Test() {
+        courierApi.login(userWithoutPassword)
+                .then().statusCode(SC_BAD_REQUEST);
 
     }
     @Test
-    public void LoginUserWithInvalidLoginImpossibleReturnMessageTest(){
-        String json = "{\"login\":\"kull002\",\"password\":\"12345\"}";
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(json)
-                .when()
-                .post("/api/v1/courier/login")
+    public void loginUserWithInvalidLoginImpossibleReturnMessageTest(){
+        courierApi.login(invalidUser1)
                 .then().assertThat().body("message", equalTo(message));
     }
     @Test
-    public void LoginUserWithInvalidPasswordImpossibleReturnMessageTest(){
-        String json = "{\"login\":\"kull001\",\"password\":\"11111\"}";
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(json)
-                .when()
-                .post("/api/v1/courier/login")
+    public void loginUserWithInvalidPasswordImpossibleReturnMessageTest(){
+        courierApi.login(invalidUser2)
                 .then().assertThat().body("message", equalTo(message));
     }
     @Test
-    public void LoginUserWithoutFieldLoginImpossibleReturnMessageTest(){
-        String json = "{\"login\":\"\",\"password\":\"12345\"}";
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(json)
-                .when()
-                .post("/api/v1/courier/login")
+    public void loginUserWithoutFieldLoginImpossibleReturnMessageTest(){
+        courierApi.login(userWithoutLogin)
                 .then().assertThat().body("message", equalTo(message2));
     }
     @Test
-    public void LoginUserWithoutFieldPasswordImpossibleReturnMessageTest() {
-        String json = "{\"login\":\"kull001\",\"password\": \"\"}";
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(json)
-                .when()
-                .post("/api/v1/courier/login")
+    public void loginUserWithoutFieldPasswordImpossibleReturnMessageTest() {
+        courierApi.login(userWithoutPassword)
                 .then().assertThat().body("message", equalTo(message2));
 
 
     }
     @Test
-    public void SuccessLoginReturnIdTest(){
-        given()
-                .header("Content-type", "application/json")
-                .body(firstUser)
-                .post("/api/v1/courier/login")
+    public void successLoginReturnIdTest(){
+        courierApi.login(firstUser)
                 .then().assertThat().body("id", notNullValue());
     }
 
 
-
-
-
     @After
-    public void DelUser(){
-
-        GetId firstUserId = given()
-                .header("Content-type", "application/json")
-                .body(firstUser)
-                .post("/api/v1/courier/login")
-                .body().as(GetId.class);
-
-        given()
-                .header("Content-type", "application/json")
-                .delete("api/v1/courier/"+ firstUserId.getId());
-
+    public void delUser() {
+        courierApi.deleteUser();
+//
     }
+
 }
